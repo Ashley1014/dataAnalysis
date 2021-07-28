@@ -1,0 +1,50 @@
+#filter_steps {
+    width: 40%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+}
+
+#page {
+    display: flex;
+    flex-direction: row;
+    flex: 1;
+}
+
+#chart {
+    width: 60%;
+    display: flex;
+    flex-direction: column;
+}
+
+#diagram {
+    height: 500px;
+}
+
+table {
+    width: 100%;
+    height: 150px;
+}
+
+table, th, td {
+    border: 1px solid black;
+    border-collapse: collapse;
+}
+
+th, td {
+    text-align: center;
+}
+
+th {
+    background-color: cadetblue;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+}
+
+body {
+    display: flex;
+}

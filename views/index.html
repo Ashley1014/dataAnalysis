@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>数据分析</title>
+    <link href="../static/css/site.css" rel="stylesheet">
+    <script src="../static/js/echarts.min.js"></script>
+    <script src="../static/js/jquery-3.5.1.js" type="text/javascript"></script>
+
+</head>
+<body>
+<div id="filter_steps">
+    <h3>漏斗步骤</h3>
+
+    <form id="filter_form" method="post" action="/">
+        <div>
+<label id="label1" for="events1">步骤1：</label>
+<select name="events1" id="events1">
+    {{range $i, $v := .Events}}
+    <option>{{$v.EventName}}</option>
+    {{end}}
+</select>
+        </div>
+<div>
+<label id="label2" for="events2">步骤2：</label>
+<select name="events2" id="events2">
+    {{range $i, $v := .Events}}
+    <option >{{$v.EventName}}</option>
+    {{end}}
+</select>
+</div>
+    <div>
+<button id="calculate" type="button">计算</button>
+<button id="add_filter" type="button" onclick="addSteps()">添加步骤</button>
+
+        <div id="user_identifier">
+        <label for="identifier">区分用户途径：</label>
+        <select name="identifier" id="identifier">
+            <option value="user_id">用户ID</option>
+            <option value="device_id">设备ID</option>
+        </select>
+        <button type="submit">选择用户途径</button>
+        </div>
+
+    </div>
+        <input type="hidden" id="num" name="num" value={{.num}} />
+    </form>
+
+    <input type="hidden" id="is_get" value="{{.IsGet}}" />
+    {{ range $k, $v := .eventMap }}
+    <input type="hidden" id="{{$k}}" value="{{$v}}" />
+    {{end}}
+    {{ range $i, $v := .numList }}
+    <input type="hidden" id="num{{$i}}" value="{{$v}}" />
+    {{end}}
+
+
+</div>
+
+    <div id="chart">
+        <div id="diagram"></div>
+
+        <div id="table">
+            <table>
+                <tr>
+                    <th>
+                        总体
+                    </th>
+                    {{ range $i, $v := .numList }}
+                    <th>步骤{{inc $i}}</th>
+                    {{end}}
+                </tr>
+                <tr>
+                    <td>
+                        总体
+                    </td>
+                    {{ range $i, $v := .numList }}
+                    <td>{{$v}}</td>
+                    {{end}}
+                </tr>
+            </table>
+        </div>
+    </div>
+
+</body>
+</html>
+
+<script type="text/javascript">
+    let counter = 3
+    let is_get = document.getElementById("is_get").value
+
+    function getArrays() {
+        let num = document.getElementById("num").value
+        let steps = []
+        let nums = []
+        for (let i=0; i < num; i++) {
+            let step_id = "step" + (i+1)
+            steps[i] = document.getElementById(step_id).value
+            let num_id = "num" + i
+            nums[i] = document.getElementById(num_id).value
+        }
+        return [steps, nums]
+    }
+
+    function drawCharts() {
+    let chartDom = document.getElementById('diagram');
+    let myChart = echarts.init(chartDom);
+    let option;
+    let [steps, nums] = getArrays()
+    let percent = []
+    for (let i = 0; i < steps.length; i++) {
+        if (i === 0) {
+            percent[i] = 100
+        } else {
+            if (Number(nums[i]) === 0) {
+                percent[i] = 0
+            } else {
+                percent[i] =(100*Number(nums[i])/Number(nums[i-1])).toFixed(2)
+            }
+        }
+    }
+
+    option = {
+        tooltip: {
+            trigger: 'axis',
+            axisPointer: {
+                type: 'shadow'
+            }
+        },
+        grid: {
+            tooltip: {
+                show: true,
+                trigger: "item",
+                containLabel: true
+            }
+        },
+        xAxis: {
+            type: 'category',
+            data: steps
+        },
+        yAxis: {
+            type: 'value',
+            max: 100,
+            min: 0,
+            axisLabel: {
+                formatter: "{value} %"
+            }
+        },
+        series: [{
+            name: '百分比',
+            data: percent,
+            type: 'bar',
+            label: {
+                show: true,
+                position: 'top'
+            },
+            showBackground: true,
+            backgroundStyle: {
+                color: 'rgba(180, 180, 180, 0.2)'
+            },
+            barWidth: "20%"
+        }]
+    };
+
+    option && myChart.setOption(option);}
+
+    function preFilter() {
+        $("#chart").hide()
+        $("#step1_name").hide()
+        $("#step2_name").hide()
+        $("#user_identifier").hide()
+        $("#add_filter").show()
+    }
+
+    function afterFilter() {
+        $("#events1").hide()
+        $("#events2").hide()
+        $("#label1").hide()
+        $("#label2").hide()
+        $("#chart").show()
+        $("#calculate").hide()
+        $("#user_identifier").hide()
+        $("#add_filter").hide()
+        showStep()
+        drawCharts()
+    }
+
+    function chooseId() {
+        $("#user_identifier").show()
+    }
+
+    function addSteps() {
+        let div = document.createElement("div")
+        let label = document.createElement("label")
+        let step = document.createElement("select")
+        let step_name = "events" + counter
+        step.name = step_name
+        step.id = step_name
+        step.innerHTML = "{{range $i, $v := .Events}} <option>{{$v.EventName}}</option>{{end}}"
+        label.textContent = "步骤"+counter+"："
+        label.htmlFor = step_name
+        let num = document.getElementById("num")
+        let form = document.getElementById("filter_form")
+        div.appendChild(label)
+        div.appendChild(step)
+        form.appendChild(div)
+        num.value = counter
+        counter += 1
+    }
+
+    function showStep() {
+        let num = document.getElementById("num").value
+        let filter_steps = document.getElementById("filter_steps")
+        for (let i= 1; i <= num; i++) {
+            let label = document.createElement("label")
+            let event_name = document.getElementById("step"+i).value
+            label.textContent = "步骤" + i + ": " + event_name
+            filter_steps.appendChild(label)
+        }
+    }
+
+    if (is_get === "1") {
+        preFilter();
+        $("#calculate").click(chooseId)
+    } else if (is_get === "0") {
+        afterFilter();
+    }
+
+</script>
